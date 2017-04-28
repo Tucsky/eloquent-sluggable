@@ -26,6 +26,9 @@ class SlugService
      */
     public function slug(Model $model, $force = false)
     {
+        $currentLocale = \App::getLocale();
+        \App::setLocale(\Request::input('locale', $currentLocale));
+
         $this->setModel($model);
 
         $attributes = [];
@@ -39,11 +42,18 @@ class SlugService
             }
 
             $slug = $this->buildSlug($attribute, $config, $force);
-
-            $this->model->setAttribute($attribute, $slug);
+            if (property_exists($this->model, 'translatable') && in_array($attribute, $this->model->translatable)) {
+                $translations = $this->model->getTranslations($attribute);
+                $translations[\App::getLocale()] = $slug;
+                $this->model->setAttribute($attribute, json_encode($translations));
+            } else {
+                $this->model->setAttribute($attribute, $slug);
+            }
 
             $attributes[] = $attribute;
         }
+
+        \App::setLocale($currentLocale);
 
         return $this->model->isDirty($attributes);
     }
