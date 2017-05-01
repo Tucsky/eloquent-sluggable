@@ -48,9 +48,7 @@ class SlugService
 
                 $translations[\Request::input('locale', \App::getLocale())] = $slug;
 
-                    dd(config('locales'));
-                foreach (config('locales') as $locale) {
-                    dd($locale);
+                foreach (config('app.locales') as $locale => $language) {
                     if (!isset($translations[$locale]))
                         $translations[$locale] = $slug;
                 }
