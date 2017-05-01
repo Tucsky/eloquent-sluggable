@@ -26,9 +26,6 @@ class SlugService
      */
     public function slug(Model $model, $force = false)
     {
-        $currentLocale = \App::getLocale();
-        \App::setLocale(\Request::input('locale', $currentLocale));
-
         $this->setModel($model);
 
         $attributes = [];
@@ -43,17 +40,28 @@ class SlugService
 
             $slug = $this->buildSlug($attribute, $config, $force);
             if (property_exists($this->model, 'translatable') && in_array($attribute, $this->model->translatable)) {
-                $translations = $this->model->getTranslations($attribute);
-                $translations[\App::getLocale()] = $slug;
-                $this->model->setAttribute($attribute, json_encode($translations));
+                $attributes = $this->model->getAttributes($attribute);
+                $translations = json_decode($attributes[$attribute] ?? '' ?: '{}', true);
+
+                if (!is_array($translations))
+                    $translations = [];
+
+                $translations[\Request::input('locale', \App::getLocale())] = $slug;
+
+                    dd(config('locales'));
+                foreach (config('locales') as $locale) {
+                    dd($locale);
+                    if (!isset($translations[$locale]))
+                        $translations[$locale] = $slug;
+                }
+
+                $this->model->setAttribute($attribute, $translations);
             } else {
                 $this->model->setAttribute($attribute, $slug);
             }
 
             $attributes[] = $attribute;
         }
-
-        \App::setLocale($currentLocale);
 
         return $this->model->isDirty($attributes);
     }
@@ -136,7 +144,17 @@ class SlugService
         }
 
         $sourceStrings = array_map(function ($key) {
+            $attributes = $this->model->getAttributes($key);
+
+            if (isset($attributes[$key])) {
+                $type = json_decode($attributes[$key], true);
+
+                if (!is_array($type))
+                    return $type;
+            }
+
             $value = data_get($this->model, $key);
+
             if (is_bool($value)) {
                 $value = (int) $value;
             }
@@ -268,9 +286,10 @@ class SlugService
         $list = $this->getExistingSlugs($slug, $attribute, $config);
 
         // if ...
-        // 	a) the list is empty, or
-        // 	b) our slug isn't in the list
+        //  a) the list is empty, or
+        //  b) our slug isn't in the list
         // ... we are okay
+
         if (
             $list->count() === 0 ||
             $list->contains($slug) === false
@@ -279,7 +298,7 @@ class SlugService
         }
 
         // if our slug is in the list, but
-        // 	a) it's for our model, or
+        //  a) it's for our model, or
         //  b) it looks like a suffixed version of our slug
         // ... we are also okay (use the current slug)
         if ($list->has($this->model->getKey())) {

@@ -70,10 +70,17 @@ trait Sluggable
     public function scopeFindSimilarSlugs(Builder $query, Model $model, $attribute, $config, $slug)
     {
         $separator = $config['separator'];
+        $locale = \Request::input('locale', \App::getLocale());
+        $quotefix = '';
 
-        return $query->where(function(Builder $q) use ($attribute, $slug, $separator) {
+        if (property_exists($model, 'translatable') && in_array($attribute, $model->translatable)) {
+            $attribute .= '->'.$locale; // mysql json search (5.7+)
+            $quotefix .= '"'; // dirty fix
+        }
+        
+        return $query->where(function(Builder $q) use ($attribute, $slug, $separator, $quotefix) {
             $q->where($attribute, '=', $slug)
-                ->orWhere($attribute, 'LIKE', $slug . $separator . '%');
+                ->orWhere($attribute, 'LIKE', $quotefix . $slug . $separator . '%');
         });
     }
 
