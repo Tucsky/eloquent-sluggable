@@ -40,8 +40,8 @@ class SlugService
 
             $slug = $this->buildSlug($attribute, $config, $force);
             if (property_exists($this->model, 'translatable') && in_array($attribute, $this->model->translatable)) {
-                $attributes = $this->model->getAttributes($attribute);
-                $translations = json_decode($attributes[$attribute] ?? '' ?: '{}', true);
+                $attr = $this->model->getAttributes($attribute);
+                $translations = json_decode($attr[$attribute] ?? '' ?: '{}', true);
 
                 if (!is_array($translations))
                     $translations = [];
