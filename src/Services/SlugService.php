@@ -147,9 +147,12 @@ class SlugService
             if (isset($attributes[$key])) {
                 $type = json_decode($attributes[$key], true);
 
-                if (!is_array($type))
+                if (!is_array($type)) {
+                    if ($type === null)
+                        return $attributes[$key];
+                    
                     return $type;
-            }
+                }            }
 
             $value = data_get($this->model, $key);
 
