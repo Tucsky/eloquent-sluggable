@@ -163,7 +163,7 @@ class SlugService
             return $value;
         }, (array)$from);
 
-        return join($sourceStrings, ' ');
+        return join(' ', $sourceStrings);
     }
 
     /**
